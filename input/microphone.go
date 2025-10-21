@@ -12,7 +12,9 @@ var InputBuffer []int16
 var inputStream *portaudio.Stream
 
 func init() {
-	portaudio.Initialize()
+	if err := portaudio.Initialize(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func StartMicAcquisition() {
@@ -38,7 +40,13 @@ func ReadStream() {
 }
 
 func Close() {
-	portaudio.Terminate()
-	inputStream.Stop()
-	inputStream.Close()
+	if err := inputStream.Stop(); err != nil {
+		log.Printf("Error stopping input stream: %v", err)
+	}
+	if err := inputStream.Close(); err != nil {
+		log.Printf("Error closing input stream: %v", err)
+	}
+	if err := portaudio.Terminate(); err != nil {
+		log.Printf("Error terminating portaudio: %v", err)
+	}
 }

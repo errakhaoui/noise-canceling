@@ -36,5 +36,7 @@ func ReadStream(audioStream []int16) {
 }
 
 func Close() {
-	player.Close()
+	if err := player.Close(); err != nil {
+		log.Printf("Error closing player: %v", err)
+	}
 }

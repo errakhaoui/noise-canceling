@@ -40,12 +40,19 @@ func ReadStream() {
 }
 
 func Close() {
-	if err := inputStream.Stop(); err != nil {
-		log.Printf("Error stopping input stream: %v", err)
+	if inputStream != nil {
+		if err := inputStream.Stop(); err != nil {
+			log.Printf("Error stopping input stream: %v", err)
+		}
+		if err := inputStream.Close(); err != nil {
+			log.Printf("Error closing input stream: %v", err)
+		}
+		inputStream = nil
 	}
-	if err := inputStream.Close(); err != nil {
-		log.Printf("Error closing input stream: %v", err)
-	}
+}
+
+// Terminate closes PortAudio completely (call only on final exit)
+func Terminate() {
 	if err := portaudio.Terminate(); err != nil {
 		log.Printf("Error terminating portaudio: %v", err)
 	}

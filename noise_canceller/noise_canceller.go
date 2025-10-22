@@ -49,11 +49,32 @@ func Toggle() bool {
 	return newState
 }
 
+// Enable turns on noise cancellation
+func Enable() {
+	enabled.Store(true)
+}
+
+// Disable turns off noise cancellation
+func Disable() {
+	enabled.Store(false)
+}
+
 // IsEnabled returns the current state of noise cancellation
 func IsEnabled() bool {
 	return enabled.Load()
 }
 
+// Terminate destroys the RNNoise state (call only on final exit)
+func Terminate() {
+	if den != nil {
+		C.rnnoise_destroy(den)
+		den = nil
+	}
+}
+
+// Close is deprecated, use Terminate() instead
+// Kept for backward compatibility with CLI version
 func Close() {
-	C.rnnoise_destroy(den)
+	// Do nothing - RNNoise state should persist across start/stop cycles
+	// Only call Terminate() when the application exits completely
 }

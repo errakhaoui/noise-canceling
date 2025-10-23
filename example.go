@@ -19,7 +19,7 @@ import (
 func main() {
 	// Command-line flags
 	listDevices := flag.Bool("list-devices", false, "List all available output devices and exit")
-	deviceName := flag.String("device", "", "Output device name (e.g., 'BlackHole' or 'BlackHole 2ch')")
+	deviceName := flag.String("device", "", "Output device name - use virtual audio device for ClearVox Virtual Mic (e.g., 'BlackHole 2ch')")
 	monitorDevice := flag.String("monitor-device", "", "Additional output device for monitoring (e.g., 'Headphones')")
 	flag.Parse()
 

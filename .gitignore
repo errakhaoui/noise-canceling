@@ -1,0 +1,20 @@
+# Build artifacts
+clearvox
+clearvox-gui
+*.app
+*.dmg
+dmg_temp/
+
+# macOS
+.DS_Store
+Icon.png
+
+# Go
+*.out
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

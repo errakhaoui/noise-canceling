@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'FyneApp.toml'  # Only trigger when version file changes
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-and-release:
+    name: Build and Release macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.3'
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install rnnoise portaudio
+
+      - name: Install Fyne packaging tool
+        run: |
+          go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build executable
+        run: |
+          go build -o clearvox-gui gui_main.go
+
+      - name: Package macOS app
+        run: |
+          ~/go/bin/fyne package -os darwin --executable ./clearvox-gui
+
+      - name: Create DMG installer
+        run: |
+          chmod +x ./create-dmg-installer.sh
+          ./create-dmg-installer.sh
+
+      - name: Get version from FyneApp.toml
+        id: get_version
+        run: |
+          # Extract version from FyneApp.toml
+          VERSION=$(grep '^Version = ' FyneApp.toml | sed 's/Version = "\(.*\)"/v\1/')
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version from FyneApp.toml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping release"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $VERSION does not exist, proceeding with release"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create git tag
+        if: steps.check_tag.outputs.skip == 'false'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Generate release notes
+        if: steps.check_tag.outputs.skip == 'false'
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## ClearVox ${{ steps.get_version.outputs.version }}
+
+          Real-time noise cancellation for macOS with crystal-clear virtual microphone support.
+
+          ### 📥 Installation
+
+          1. Download `ClearVox-Installer.dmg` below
+          2. Open the DMG file
+          3. Drag ClearVox.app to Applications folder
+          4. Launch from Applications
+          5. Grant microphone permission when prompted
+
+          **✨ Zero setup required** - All dependencies bundled inside!
+
+          ### ✨ Features
+
+          - 🎤 Real-time noise cancellation using RNNoise
+          - 🖥️ Beautiful native macOS GUI
+          - 🎧 Virtual microphone for video calls (Google Meet, Zoom, etc.)
+          - 🔧 Zero manual setup - everything bundled
+          - 🚀 Auto-install BlackHole for virtual microphone
+
+          ### 📦 What's Included
+
+          - ✅ RNNoise library (noise cancellation)
+          - ✅ PortAudio library (audio I/O)
+          - ✅ All dependencies bundled
+          - ✅ Code-signed application
+
+          ### 🖥️ System Requirements
+
+          - macOS 10.11 (El Capitan) or newer
+          - Apple Silicon or Intel Mac
+
+          ### 🐛 Issues or Questions?
+
+          Please report issues at: https://github.com/errakhaoui/noise-canceling/issues
+          EOF
+          echo "Generated release notes"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ClearVox-Installer.dmg
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          name: ClearVox ${{ steps.get_version.outputs.version }}
+          tag_name: ${{ steps.get_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload DMG as artifact
+        if: steps.check_tag.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClearVox-Installer-${{ steps.get_version.outputs.version }}
+          path: ClearVox-Installer.dmg
+          retention-days: 90

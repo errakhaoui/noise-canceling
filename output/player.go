@@ -106,7 +106,7 @@ func StartOutputStreamToDevices(devices []*portaudio.DeviceInfo) error {
 		streamParams.Output.Device = device
 
 		// Use higher latency for virtual audio devices to prevent underflow
-		// BlackHole and similar virtual devices benefit from higher latency
+		// Virtual audio devices (BlackHole, Loopback, etc.) benefit from higher latency
 		if device.DefaultHighOutputLatency > 0 {
 			streamParams.Output.Latency = device.DefaultHighOutputLatency
 		} else {

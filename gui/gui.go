@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/errakhaoui/noise-canceling/input"
 	"github.com/errakhaoui/noise-canceling/noise_canceller"
@@ -172,7 +173,7 @@ func toggleNoiseCancellation(enabled bool) {
 // CreateGUI creates and displays the main GUI window
 func CreateGUI() {
 	myApp := app.New()
-	myWindow := myApp.NewWindow("Noise Cancellation Control")
+	myWindow := myApp.NewWindow("ClearVox")
 	myWindow.Resize(fyne.NewSize(450, 400))
 
 	// Get available devices
@@ -241,7 +242,7 @@ func CreateGUI() {
 		inputSelect.SetSelected(inputDeviceNames[defaultInputIdx])
 	}
 
-	outputLabel := widget.NewLabel("Output Device:")
+	outputLabel := widget.NewLabel("Output Device (Virtual Mic):")
 	outputSelect := widget.NewSelect(outputDeviceNames, func(value string) {
 		for i, name := range outputDeviceNames {
 			if name == value {
@@ -320,7 +321,7 @@ func CreateGUI() {
 
 	// Layout
 	content := container.NewVBox(
-		widget.NewLabelWithStyle("Noise Cancellation Control", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle("ClearVox", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		widget.NewSeparator(),
 		inputLabel,
 		inputSelect,
@@ -347,7 +348,103 @@ func CreateGUI() {
 		input.Terminate()
 		output.Terminate()
 		noise_canceller.Terminate()
+
+		// Cleanup any temp files
+		cleanupTempFiles()
 	})
 
-	myWindow.ShowAndRun()
+	// Show window first
+	myWindow.Show()
+
+	// Check if BlackHole is installed and offer to install it if not
+	go func() {
+		installed, err := isBlackHoleInstalled()
+		if err != nil {
+			log.Printf("Error checking BlackHole installation: %v", err)
+			return
+		}
+
+		if !installed {
+			// Show setup dialog
+			dialog.ShowConfirm(
+				"ClearVox Virtual Microphone Setup",
+				"To use ClearVox as a virtual microphone in video calls, you need the BlackHole audio driver.\n\n"+
+					"Would you like to install it now?\n\n"+
+					"This will:\n"+
+					"• Download BlackHole 2ch (~1 MB)\n"+
+					"• Install the audio driver (requires admin password)\n"+
+					"• Enable virtual microphone for video calls",
+				func(install bool) {
+					if install {
+						handleBlackHoleInstallation(myWindow)
+					}
+				},
+				myWindow,
+			)
+		}
+	}()
+
+	myApp.Run()
+}
+
+// handleBlackHoleInstallation downloads and installs BlackHole
+func handleBlackHoleInstallation(window fyne.Window) {
+	// Show progress dialog
+	progressBar := widget.NewProgressBar()
+	progressLabel := widget.NewLabel("Downloading BlackHole...")
+
+	progressContent := container.NewVBox(
+		progressLabel,
+		progressBar,
+	)
+
+	progressDialog := dialog.NewCustom("Installing Virtual Microphone", "Cancel", progressContent, window)
+	progressDialog.Show()
+
+	go func() {
+		// Download BlackHole
+		pkgPath, err := downloadBlackHole(func(downloaded, total int64) {
+			if total > 0 {
+				progress := float64(downloaded) / float64(total)
+				progressBar.SetValue(progress)
+				progressLabel.SetText(fmt.Sprintf("Downloading... %.1f%%", progress*100))
+			}
+		})
+
+		if err != nil {
+			progressDialog.Hide()
+			dialog.ShowError(
+				fmt.Errorf("failed to download BlackHole: %w", err),
+				window,
+			)
+			return
+		}
+
+		progressLabel.SetText("Opening installer...")
+		progressBar.SetValue(1.0)
+
+		// Install BlackHole
+		if err := installBlackHole(pkgPath); err != nil {
+			progressDialog.Hide()
+			dialog.ShowError(
+				fmt.Errorf("failed to open installer: %w", err),
+				window,
+			)
+			return
+		}
+
+		progressDialog.Hide()
+
+		// Show success message
+		dialog.ShowInformation(
+			"Installation Started",
+			"The BlackHole installer has been opened.\n\n"+
+				"Please:\n"+
+				"1. Follow the installer prompts\n"+
+				"2. Enter your admin password when asked\n"+
+				"3. Complete the installation\n\n"+
+				"Once installed, restart ClearVox to use the Virtual Microphone feature.",
+			window,
+		)
+	}()
 }

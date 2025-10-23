@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  test-and-lint:
+    # Skip draft pull requests
+    if: github.event.pull_request.draft == false
+
+    name: Test and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.3'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev portaudio19-dev autoconf automake libtool
+
+      - name: Build and install RNNoise
+        run: |
+          git clone https://github.com/xiph/rnnoise.git /tmp/rnnoise
+          cd /tmp/rnnoise
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Check formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./input/... ./output/... ./noise_canceller/... ./gui/... -short -v -race -coverprofile=coverage.out
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m ./input/... ./output/... ./noise_canceller/... ./gui/...

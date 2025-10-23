@@ -8,17 +8,24 @@ Real-time noise cancellation for Go using RNNoise. Create a crystal-clear virtua
 
 **[⬇️ Download ClearVox-Installer.dmg](https://github.com/errakhaoui/noise-canceling/releases/latest)**
 
-**Installation (30 seconds):**
+**Professional PKG Installation (30 seconds):**
 1. Open the downloaded DMG file
-2. Drag ClearVox.app to Applications folder
-3. Launch ClearVox from Applications
-4. Done! ✨
+2. Double-click **ClearVox-Installer.pkg**
+3. Follow the installer prompts and enter your password
+4. Launch ClearVox from Applications
+5. Done! ✨
 
-**✅ Zero setup required** - No Homebrew, no terminal, everything is bundled.
+**✅ Professional installer** - Automated installation, no drag-and-drop needed. Everything is bundled.
 
 ### For Developers
 
 See [Building from Source](#building-clearvox) below.
+
+### Distribution Methods
+
+ClearVox is distributed via **GitHub Releases** (industry standard for desktop apps).
+
+For details on distribution options (Homebrew Cask, GitHub Packages, etc.), see [DISTRIBUTION.md](DISTRIBUTION.md).
 
 ---
 
@@ -82,30 +89,40 @@ go build -o clearvox example.go
 
 ### For End Users (Non-Technical)
 
-**✨ Zero Dependencies - Completely Self-Contained!**
+**✨ Professional PKG Installer - One-Click Installation!**
 
-ClearVox comes with everything built-in. No Homebrew, no terminal, no technical setup required.
+ClearVox uses a professional macOS installer package (.pkg) for seamless, automated installation.
 
-**Simple installation via DMG:**
+**Installation via DMG:**
 1. Download `ClearVox-Installer.dmg` from [GitHub Releases](https://github.com/errakhaoui/noise-canceling/releases)
 2. Open the DMG file
-3. Drag "ClearVox.app" to Applications folder
-4. Launch from Applications or Spotlight
-5. Grant microphone permission when prompted (automatic macOS dialog)
-6. (Optional) Click "Yes" when asked to install virtual microphone driver
+3. Read the README.txt (optional)
+4. Double-click **"ClearVox-Installer.pkg"**
+5. Follow the macOS Installer prompts
+6. Enter your password when requested
+7. Click "Install"
+8. Done! ClearVox is now in your Applications folder
 
-**That's it!**
+**First Launch:**
+1. Open ClearVox from Applications or Spotlight
+2. Grant microphone permission when prompted (automatic macOS dialog)
+3. (Optional) Click "Yes" when asked to install virtual microphone driver
 
-**What's Bundled:**
+**What's Bundled in the PKG:**
 - ✅ RNNoise library (noise cancellation engine)
 - ✅ PortAudio library (audio I/O)
 - ✅ All required dependencies
+- ✅ Professional installer with welcome & completion screens
+- ✅ Automatic installation to /Applications
+- ✅ Proper permissions setup
 
-**Nothing to Install Manually:**
-- ❌ No Homebrew required
-- ❌ No terminal commands
-- ❌ No technical knowledge needed
-- ✅ Works out of the box on any Mac (macOS 10.11+)
+**Benefits of PKG Installer:**
+- ✅ One-click automated installation
+- ✅ Professional macOS installer UI
+- ✅ No drag-and-drop needed
+- ✅ Handles permissions automatically
+- ✅ Standard installation process
+- ✅ Works on any Mac (macOS 10.11+)
 
 **Optional Virtual Microphone:**
 - BlackHole is automatically downloaded and installed when you first launch ClearVox
@@ -150,7 +167,7 @@ This creates a `clearvox-gui` binary (~30MB)
 ```
 This creates `ClearVox.app` with proper macOS app structure
 
-**Step 3: Create distributable DMG installer**
+**Step 3: Create distributable DMG with PKG installer**
 ```bash
 ./create-dmg-installer.sh
 ```
@@ -160,7 +177,9 @@ This script automatically:
 - ✅ Bundles RNNoise and PortAudio libraries into the app
 - ✅ Fixes library paths to use bundled versions
 - ✅ Re-signs the app with ad-hoc signature
-- ✅ Creates `ClearVox-Installer.dmg` (~19MB)
+- ✅ Creates professional PKG installer with welcome/conclusion screens
+- ✅ Packages PKG inside DMG with README
+- ✅ Creates `ClearVox-Installer.dmg` (~20MB)
 
 **One-line build command:**
 ```bash
@@ -220,7 +239,15 @@ After successful build:
 ```
 clearvox-gui              # Executable binary (30MB)
 ClearVox.app/             # macOS app bundle
-ClearVox-Installer.dmg    # Distributable installer (19MB)
+ClearVox-Installer.pkg    # Professional PKG installer (30MB)
+ClearVox-Installer.dmg    # DMG containing PKG + README (20MB)
+```
+
+**DMG Contents:**
+```
+ClearVox-Installer.dmg/
+├── ClearVox-Installer.pkg    # Double-click to install
+└── README.txt                # Installation instructions
 ```
 
 #### Publishing a Release (Fully Automated)

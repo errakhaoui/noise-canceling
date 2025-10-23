@@ -1,8 +1,10 @@
 # Build artifacts
 clearvox
 clearvox-gui
+noise-canceling-gui
 *.app
 *.dmg
+*.pkg
 dmg_temp/
 
 # macOS

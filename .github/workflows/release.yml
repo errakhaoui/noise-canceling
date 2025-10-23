@@ -26,12 +26,31 @@ jobs:
         run: |
           brew install rnnoise portaudio
 
+      - name: Set up CGO flags for Homebrew libraries
+        run: |
+          # Get Homebrew prefix (different on Intel vs Apple Silicon)
+          BREW_PREFIX=$(brew --prefix)
+          echo "CGO_CFLAGS=-I${BREW_PREFIX}/include" >> $GITHUB_ENV
+          echo "CGO_LDFLAGS=-L${BREW_PREFIX}/lib" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=${BREW_PREFIX}/lib/pkgconfig" >> $GITHUB_ENV
+
+          # Verify installation
+          echo "Homebrew prefix: $BREW_PREFIX"
+          echo "Checking for rnnoise.h:"
+          ls -la ${BREW_PREFIX}/include/rnnoise.h || echo "rnnoise.h not found"
+          echo "Checking for librnnoise:"
+          ls -la ${BREW_PREFIX}/lib/librnnoise* || echo "librnnoise not found"
+
       - name: Install Fyne packaging tool
         run: |
           go install fyne.io/fyne/v2/cmd/fyne@latest
 
       - name: Build executable
+        env:
+          CGO_ENABLED: 1
         run: |
+          echo "Building with CGO_CFLAGS=$CGO_CFLAGS"
+          echo "Building with CGO_LDFLAGS=$CGO_LDFLAGS"
           go build -o clearvox-gui gui_main.go
 
       - name: Package macOS app
